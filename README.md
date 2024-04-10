@@ -1,3 +1,5 @@
+MIGRATED: Now at [https://github.com/CouleeApps/bn_inspectors](https://github.com/CouleeApps/bn_inspectors).
+
 bn_linear_inspector
 --
 
