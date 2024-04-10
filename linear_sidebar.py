@@ -59,6 +59,12 @@ class LinearViewTreeItem:
         self.model.last_id += 1
 
     @property
+    def has_object_children(self) -> bool:
+        if self.cursor is None:
+            return False
+        return self.cursor.first_child is not None
+
+    @property
     def children(self) -> List['LinearViewTreeItem']:
         if self._children is None:
             self._children = []
@@ -69,7 +75,15 @@ class LinearViewTreeItem:
                     self._children.append(child)
                     cur = cur.next
                 if len(self._children) == 0:
-                    lines = self.cursor.get_lines(None, None)
+                    prev = None
+                    next = None
+                    prev_object = self.prev_object
+                    if prev_object is not None:
+                        prev = prev_object.cursor
+                    next_object = self.next_object
+                    if next_object is not None:
+                        next = next_object.cursor
+                    lines = self.cursor.get_lines(prev, next)
                     for line in lines:
                         child = LinearViewTreeItem(self.model, line=line, parent=self)
                         self._children.append(child)
@@ -79,6 +93,62 @@ class LinearViewTreeItem:
                     self._children.append(child)
 
         return self._children
+
+    @property
+    def first_object(self) -> Optional['LinearViewTreeItem']:
+        if not self.has_object_children:
+            return None
+        child = self.children[0]
+        first_child = child.first_object
+        if first_child is None:
+            return child
+        else:
+            return first_child
+
+    @property
+    def last_object(self) -> Optional['LinearViewTreeItem']:
+        if not self.has_object_children:
+            return None
+        child = self.children[-1]
+        last_child = child.last_object
+        if last_child is None:
+            return child
+        else:
+            return last_child
+
+    @property
+    def prev_object(self) -> Optional['LinearViewTreeItem']:
+        if self.cursor is None:
+            return None
+        if self.parent is None:
+            return None
+        # Go one back in our parent, unless we're the first item in our parent,
+        # in which case go one back in our parent's parent and pick their last child
+        self_parent_index = self.parent.children.index(self)
+        while self_parent_index > 0:
+            self_parent_index -= 1
+            last_prev = self.parent.children[self_parent_index].last_object
+            if last_prev is not None:
+                return last_prev
+        # No previous child of the parent matches, go up a level
+        return self.parent.prev_object
+
+    @property
+    def next_object(self) -> Optional['LinearViewTreeItem']:
+        if self.cursor is None:
+            return None
+        if self.parent is None:
+            return None
+        # Go one forward in our parent, unless we're the last item in our parent,
+        # in which case go one forward in our parent's parent and pick their first child
+        self_parent_index = self.parent.children.index(self)
+        while (self_parent_index + 1) < len(self.parent.children):
+            self_parent_index += 1
+            first_prev = self.parent.children[self_parent_index].first_object
+            if first_prev is not None:
+                return first_prev
+        # No next child of the parent matches, go up a level
+        return self.parent.next_object
 
     @property
     def name(self) -> str:
@@ -217,6 +287,7 @@ class LinearSidebarWidget(SidebarWidget, UIContextNotification):
     def __init__(self, name, frame: ViewFrame, data: BinaryView):
         SidebarWidget.__init__(self, name)
         UIContextNotification.__init__(self)
+        self.setParent(frame)
         self.m_actionHandler.setupActionHandler(self)
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
