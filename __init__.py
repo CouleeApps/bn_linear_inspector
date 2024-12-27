@@ -23,7 +23,7 @@ from PySide6.QtCore import Qt, QRectF, QAbstractItemModel, QObject, QModelIndex
 from PySide6.QtGui import QImage, QPainter, QFont, QColor, QShowEvent
 from PySide6.QtWidgets import QVBoxLayout, QTreeView
 from binaryninja import BinaryView, LinearViewObject, FunctionGraphType, \
-    LinearDisassemblyLine, InstructionTextToken
+    LinearDisassemblyLine, InstructionTextToken, FunctionViewType
 from binaryninjaui import SidebarWidget, SidebarWidgetType, Sidebar, UIContext, \
     UIContextNotification, ViewFrame, View, ViewLocation
 
@@ -298,7 +298,7 @@ class LinearSidebarWidget(SidebarWidget, UIContextNotification):
         self.tree = QTreeView(self)
         self.tree.setModel(self.model)
         self.tree.clicked.connect(self.item_clicked)
-        self.graph_type = FunctionGraphType.NormalFunctionGraph
+        self.graph_type = FunctionViewType(FunctionGraphType.NormalFunctionGraph)
         self.current_address = 0
 
         self.layout.addWidget(self.tree)
@@ -363,26 +363,26 @@ class LinearSidebarWidget(SidebarWidget, UIContextNotification):
             self.data.navigate(f'Linear:{self.data.view_type}', addr)
 
     def update_tree(self):
-        if self.graph_type == FunctionGraphType.LiftedILFunctionGraph:
+        if self.graph_type.view_type == FunctionGraphType.LiftedILFunctionGraph:
             self.model.set_root(LinearViewObject.lifted_il(self.data))
-        elif self.graph_type == FunctionGraphType.LowLevelILFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.LowLevelILFunctionGraph:
             self.model.set_root(LinearViewObject.llil(self.data))
-        elif self.graph_type == FunctionGraphType.LowLevelILSSAFormFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.LowLevelILSSAFormFunctionGraph:
             self.model.set_root(LinearViewObject.llil_ssa_form(self.data))
-        elif self.graph_type == FunctionGraphType.MediumLevelILFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.MediumLevelILFunctionGraph:
             self.model.set_root(LinearViewObject.mlil(self.data))
-        elif self.graph_type == FunctionGraphType.MediumLevelILSSAFormFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.MediumLevelILSSAFormFunctionGraph:
             self.model.set_root(LinearViewObject.mlil_ssa_form(self.data))
-        elif self.graph_type == FunctionGraphType.MappedMediumLevelILFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.MappedMediumLevelILFunctionGraph:
             self.model.set_root(LinearViewObject.mmlil(self.data))
-        elif self.graph_type == FunctionGraphType.MappedMediumLevelILSSAFormFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.MappedMediumLevelILSSAFormFunctionGraph:
             self.model.set_root(LinearViewObject.mmlil_ssa_form(self.data))
-        elif self.graph_type == FunctionGraphType.HighLevelILFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.HighLevelILFunctionGraph:
             self.model.set_root(LinearViewObject.hlil(self.data))
-        elif self.graph_type == FunctionGraphType.HighLevelILSSAFormFunctionGraph:
+        elif self.graph_type.view_type == FunctionGraphType.HighLevelILSSAFormFunctionGraph:
             self.model.set_root(LinearViewObject.hlil_ssa_form(self.data))
-        elif self.graph_type == FunctionGraphType.HighLevelLanguageRepresentationFunctionGraph:
-            self.model.set_root(LinearViewObject.language_representation(self.data))
+        elif self.graph_type.view_type == FunctionGraphType.HighLevelLanguageRepresentationFunctionGraph:
+            self.model.set_root(LinearViewObject.language_representation(self.data, None, self.graph_type.name))
         else:
             self.model.set_root(LinearViewObject.disassembly(self.data))
 
