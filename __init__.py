@@ -23,7 +23,8 @@ from PySide6.QtCore import Qt, QRectF, QAbstractItemModel, QObject, QModelIndex
 from PySide6.QtGui import QImage, QPainter, QFont, QColor, QShowEvent
 from PySide6.QtWidgets import QVBoxLayout, QTreeView
 from binaryninja import BinaryView, LinearViewObject, FunctionGraphType, \
-    LinearDisassemblyLine, InstructionTextToken, FunctionViewType
+    LinearDisassemblyLine, InstructionTextToken, FunctionViewType, \
+    InstructionTextTokenType, LinearDisassemblyLineType, InstructionTextTokenContext
 from binaryninjaui import SidebarWidget, SidebarWidgetType, Sidebar, UIContext, \
     UIContextNotification, ViewFrame, View, ViewLocation
 
@@ -47,12 +48,14 @@ class LinearViewTreeItem:
             cursor: LinearViewObject = None,
             line: Optional[LinearDisassemblyLine] = None,
             token: Optional[InstructionTextToken] = None,
+            text: Optional[str] = None,
             parent: Optional['LinearViewTreeItem'] = None
     ):
         self.model = model
         self.cursor = cursor
         self.line = line
         self.token = token
+        self.text = text
         self.parent = parent
         self.id = self.model.last_id
         self.model.ids[self.model.last_id] = self
@@ -88,9 +91,23 @@ class LinearViewTreeItem:
                         child = LinearViewTreeItem(self.model, line=line, parent=self)
                         self._children.append(child)
             if self.line is not None:
+                self._children.append(LinearViewTreeItem(self.model, text=f"Type: {LinearDisassemblyLineType(self.line.type).name}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Function: {self.line.function}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Block: {self.line.block}", parent=self))
                 for token in self.line.contents.tokens:
                     child = LinearViewTreeItem(self.model, token=token, parent=self)
                     self._children.append(child)
+            if self.token is not None:
+                self._children.append(LinearViewTreeItem(self.model, text=f"Type: {InstructionTextTokenType(self.token.type).name}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Value: {self.token.value:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Size: {self.token.size:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Operand: {self.token.operand:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Context: {InstructionTextTokenContext(self.token.context).name}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Address: {self.token.address:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Confidence: {self.token.confidence}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Type Names: {self.token.typeNames}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Width: {self.token.width:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"IL Expr Index: {self.token.il_expr_index:#x}", parent=self))
 
         return self._children
 
@@ -158,6 +175,8 @@ class LinearViewTreeItem:
             return "".join(t.text for t in self.line.contents.tokens)
         if self.token is not None:
             return self.token.text
+        if self.text is not None:
+            return self.text
         return ""
 
     @property
@@ -166,7 +185,7 @@ class LinearViewTreeItem:
             return self.cursor.start
         if self.line is not None:
             return self.line.contents.address
-        if self.token is not None:
+        if self.token is not None or self.text is not None:
             return self.parent.start
         return 0
 
@@ -181,7 +200,7 @@ class LinearViewTreeItem:
                 return self.parent.end
             else:
                 return self.parent.children[parent_index + 1].start
-        if self.token is not None:
+        if self.token is not None or self.text is not None:
             # Use parent start so we don't expand tokens
             return self.parent.start
         return 0
