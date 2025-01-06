@@ -94,6 +94,9 @@ class LinearViewTreeItem:
                 self._children.append(LinearViewTreeItem(self.model, text=f"Type: {LinearDisassemblyLineType(self.line.type).name}", parent=self))
                 self._children.append(LinearViewTreeItem(self.model, text=f"Function: {self.line.function}", parent=self))
                 self._children.append(LinearViewTreeItem(self.model, text=f"Block: {self.line.block}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Highlight: {self.line.contents.highlight}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"Address: {self.line.contents.address:#x}", parent=self))
+                self._children.append(LinearViewTreeItem(self.model, text=f"IL Instruction: {self.line.contents.il_instruction}", parent=self))
                 for token in self.line.contents.tokens:
                     child = LinearViewTreeItem(self.model, token=token, parent=self)
                     self._children.append(child)
